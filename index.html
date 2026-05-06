@@ -1,0 +1,321 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vanguard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0c10;--surface:#13161d;--surface2:#1c2029;--border:#2a2e3a;
+    --accent:#e8c14a;--accent2:#f0d980;--text:#e8eaf0;--muted:#7a8099;
+    --danger:#e05252;--success:#4caf7d;--info:#5b9cf6;
+    --radius:10px;--font:'DM Sans',sans-serif;--display:'Bebas Neue',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+  h2.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100}
+  .logo{font-family:var(--display);font-size:2rem;letter-spacing:3px;color:var(--accent)}
+  .logo span{color:var(--text);font-size:0.9rem;font-family:var(--font);font-weight:300;letter-spacing:2px;margin-left:8px;vertical-align:middle}
+  main{padding:2rem}
+  .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
+  .search-wrap{position:relative;flex:1;min-width:220px}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+  input[type=text],input[type=number],input[type=url],select{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);padding:0 12px;height:40px;font-family:var(--font);font-size:14px;outline:none;transition:.2s}
+  input[type=text]:focus,input[type=number]:focus,input[type=url]:focus{border-color:var(--accent)}
+  .search-wrap input{padding-left:38px;width:100%}
+  .btn{height:40px;padding:0 18px;border-radius:var(--radius);border:none;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.2s}
+  .btn-primary{background:var(--accent);color:#0a0c10}
+  .btn-primary:hover{background:var(--accent2)}
+  .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
+  .btn-danger:hover{background:rgba(224,82,82,.12)}
+  .btn-edit{background:transparent;border:1px solid var(--info);color:var(--info);height:32px;padding:0 12px;font-size:12px}
+  .btn-edit:hover{background:rgba(91,156,246,.12)}
+  .btn-del{background:transparent;border:1px solid var(--danger);color:var(--danger);height:32px;padding:0 12px;font-size:12px}
+  .btn-del:hover{background:rgba(224,82,82,.12)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+  .btn-ghost:hover{border-color:var(--text);color:var(--text)}
+  .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead{background:var(--surface2)}
+  th{padding:14px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)}
+  td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  .num-badge{background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-weight:600;font-size:13px;padding:4px 10px;border-radius:6px;font-family:monospace;display:inline-block}
+  .card-img{width:52px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--surface2);cursor:zoom-in;transition:transform .15s,box-shadow .15s}
+  .card-img:hover{transform:scale(1.08);box-shadow:0 4px 18px rgba(232,193,74,.25)}
+  .img-placeholder{width:52px;height:72px;border-radius:6px;border:1px dashed var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
+  .actions{display:flex;gap:6px;align-items:center}
+  .empty-state{text-align:center;padding:4rem 1rem;color:var(--muted)}
+  .empty-state .icon{font-size:48px;margin-bottom:1rem;opacity:.4}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:440px;padding:2rem;animation:slideUp .2s ease}
+  @keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal h3{font-family:var(--display);font-size:1.6rem;letter-spacing:2px;color:var(--accent);margin-bottom:1.5rem}
+  .form-group{margin-bottom:1.2rem}
+  .form-group label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+  .form-group input{width:100%}
+  .form-row{display:flex;gap:10px}
+  .form-row .form-group{flex:1}
+  .modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
+  .stat-val{font-family:var(--display);font-size:2rem;color:var(--accent);letter-spacing:1px}
+  .stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:4px}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:14px;color:var(--text);z-index:999;animation:slideUp .2s ease;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .toast.success{border-color:var(--success);color:var(--success)}
+  .toast.danger{border-color:var(--danger);color:var(--danger)}
+  .confirm-modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:360px;padding:1.5rem;animation:slideUp .2s ease;text-align:center}
+  .confirm-modal h4{font-size:16px;font-weight:600;margin-bottom:8px}
+  .confirm-modal p{font-size:13px;color:var(--muted);margin-bottom:1.5rem}
+
+  /* Lightbox */
+  .lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .lightbox-inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:16px;animation:popIn .22s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+  .lightbox-img{max-width:min(480px,90vw);max-height:70vh;object-fit:contain;border-radius:12px;border:2px solid var(--border);box-shadow:0 24px 64px rgba(0,0,0,.7)}
+  .lightbox-name{font-family:var(--display);font-size:1.6rem;letter-spacing:3px;color:var(--accent)}
+  .lightbox-num{font-size:13px;color:var(--muted);font-family:monospace}
+  .lightbox-close{position:absolute;top:-44px;right:0;background:transparent;border:1px solid var(--border);color:var(--muted);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.2s}
+  .lightbox-close:hover{border-color:var(--text);color:var(--text)}
+</style>
+</head>
+<body>
+<h2 class="sr-only">Vanguard card database — browse, search, add, edit, and delete card entries with number, name, and picture.</h2>
+
+<header>
+  <div class="logo">VANGUARD <span>DATABASE</span></div>
+  <div style="font-size:12px;color:var(--muted)" id="record-count"></div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total Cards</div></div>
+    <div class="stat"><div class="stat-val" id="stat-results">0</div><div class="stat-label">Results Shown</div></div>
+    <div class="stat"><div class="stat-val" id="stat-last">—</div><div class="stat-label">Last Added</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="search" placeholder="Search by name or number…" oninput="renderTable()" />
+    </div>
+    <select id="sort-select" onchange="renderTable()" style="height:40px">
+      <option value="num-asc">No. ↑</option>
+      <option value="num-desc">No. ↓</option>
+      <option value="name-asc">Name A–Z</option>
+      <option value="name-desc">Name Z–A</option>
+    </select>
+    <button class="btn btn-primary" onclick="openModal()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Card
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th style="width:64px">No.</th>
+          <th>Name</th>
+          <th style="width:80px">Picture</th>
+          <th style="width:140px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="modal-overlay" style="display:none" onclick="closeIfOverlay(event)">
+  <div class="modal" id="modal">
+    <h3 id="modal-title">ADD CARD</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Card Number</label>
+        <input type="number" id="f-num" placeholder="e.g. 001" min="1" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Card Name</label>
+      <input type="text" id="f-name" placeholder="e.g. Blaster Blade" />
+    </div>
+    <div class="form-group">
+      <label>Picture URL</label>
+      <input type="url" id="f-img" placeholder="https://example.com/image.jpg" />
+    </div>
+    <div id="img-preview" style="margin-top:8px;display:none;text-align:center"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCard()">Save Card</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="overlay" id="confirm-overlay" style="display:none">
+  <div class="confirm-modal">
+    <h4>Delete Card?</h4>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-ghost" onclick="document.getElementById('confirm-overlay').style.display='none'">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox-overlay" id="lightbox" style="display:none" onclick="closeLightbox(event)">
+  <div class="lightbox-inner" onclick="event.stopPropagation()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img class="lightbox-img" id="lightbox-img" src="" alt="" />
+    <div class="lightbox-name" id="lightbox-name"></div>
+    <div class="lightbox-num" id="lightbox-num"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none"></div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('vanguard_db') || '[]');
+let editId = null;
+
+function save(){localStorage.setItem('vanguard_db',JSON.stringify(db))}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+function toast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type;t.style.display='block';
+  setTimeout(()=>{t.style.display='none'},2400);
+}
+
+function updateStats(filtered){
+  document.getElementById('stat-total').textContent=db.length;
+  document.getElementById('stat-results').textContent=filtered.length;
+  const last=db.length?db[db.length-1].name:'—';
+  document.getElementById('stat-last').textContent=last.length>10?last.slice(0,9)+'…':last;
+  document.getElementById('record-count').textContent=db.length+' record'+(db.length!==1?'s':'');
+}
+
+function openLightbox(img,name,num){
+  document.getElementById('lightbox-img').src=img;
+  document.getElementById('lightbox-img').alt=name;
+  document.getElementById('lightbox-name').textContent=name;
+  document.getElementById('lightbox-num').textContent='#'+String(num).padStart(3,'0');
+  document.getElementById('lightbox').style.display='flex';
+}
+
+function closeLightbox(e){
+  if(!e||e.target===document.getElementById('lightbox'))
+    document.getElementById('lightbox').style.display='none';
+}
+
+function renderTable(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  const sort=document.getElementById('sort-select').value;
+  let rows=[...db];
+  if(q)rows=rows.filter(r=>r.name.toLowerCase().includes(q)||String(r.num).includes(q));
+  rows.sort((a,b)=>{
+    if(sort==='num-asc')return a.num-b.num;
+    if(sort==='num-desc')return b.num-a.num;
+    if(sort==='name-asc')return a.name.localeCompare(b.name);
+    if(sort==='name-desc')return b.name.localeCompare(a.name);
+    return 0;
+  });
+  const tbody=document.getElementById('table-body');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">⚔</div><div>No cards found</div><div style="font-size:12px;margin-top:8px">Try a different search or add a new card</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML=rows.map(r=>`
+      <tr>
+        <td><span class="num-badge">#${String(r.num).padStart(3,'0')}</span></td>
+        <td style="font-weight:500">${escHtml(r.name)}</td>
+        <td>${r.img
+          ?`<img class="card-img" src="${escHtml(r.img)}" alt="${escHtml(r.name)}"
+              onclick="openLightbox('${escHtml(r.img)}','${escHtml(r.name)}',${r.num})"
+              onerror="this.style.display='none';this.nextSibling.style.display='flex'" title="Click to enlarge" />
+            <div class="img-placeholder" style="display:none">No Image</div>`
+          :`<div class="img-placeholder">No Image</div>`}
+        </td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="openModal('${r.id}')">Edit</button>
+          <button class="btn btn-del" onclick="confirmDelete('${r.id}','${escHtml(r.name)}')">Delete</button>
+        </div></td>
+      </tr>`).join('');
+  }
+  updateStats(rows);
+}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+function openModal(id){
+  editId=id||null;
+  const card=id?db.find(r=>r.id===id):null;
+  document.getElementById('modal-title').textContent=id?'EDIT CARD':'ADD CARD';
+  document.getElementById('f-num').value=card?card.num:'';
+  document.getElementById('f-name').value=card?card.name:'';
+  document.getElementById('f-img').value=card?card.img:'';
+  updateImgPreview(card?card.img:'');
+  document.getElementById('modal-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('f-num').focus(),50);
+}
+
+function closeModal(){document.getElementById('modal-overlay').style.display='none';editId=null}
+function closeIfOverlay(e){if(e.target===document.getElementById('modal-overlay'))closeModal()}
+
+document.getElementById('f-img').addEventListener('input',e=>updateImgPreview(e.target.value));
+
+function updateImgPreview(url){
+  const p=document.getElementById('img-preview');
+  if(url&&url.trim()){
+    p.style.display='block';
+    p.innerHTML=`<img src="${escHtml(url)}" style="width:52px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--border)" onerror="this.parentNode.innerHTML='<span style=font-size:12px;color:var(--danger)>Invalid image URL</span>'" />`;
+  } else {p.style.display='none'}
+}
+
+function saveCard(){
+  const num=parseInt(document.getElementById('f-num').value,10);
+  const name=document.getElementById('f-name').value.trim();
+  const img=document.getElementById('f-img').value.trim();
+  if(!num||num<1){toast('Enter a valid card number','danger');return}
+  if(!name){toast('Enter a card name','danger');return}
+  if(editId){
+    const idx=db.findIndex(r=>r.id===editId);
+    if(idx>-1){db[idx]={...db[idx],num,name,img}}
+    toast('Card updated!');
+  } else {
+    if(db.find(r=>r.num===num)){toast('Card number already exists','danger');return}
+    db.push({id:genId(),num,name,img});
+    toast('Card added!');
+  }
+  save();closeModal();renderTable();
+}
+
+function confirmDelete(id,name){
+  document.getElementById('confirm-msg').textContent=`Delete "${name}"? This cannot be undone.`;
+  document.getElementById('confirm-ok').onclick=()=>{
+    db=db.filter(r=>r.id!==id);save();
+    document.getElementById('confirm-overlay').style.display='none';
+    renderTable();toast('Card deleted','danger');
+  };
+  document.getElementById('confirm-overlay').style.display='flex';
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeModal();
+    document.getElementById('confirm-overlay').style.display='none';
+    document.getElementById('lightbox').style.display='none';
+  }
+});
+
+renderTable();
+</script>
+</body>
+</html>
