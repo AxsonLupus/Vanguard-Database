@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,6 +44,11 @@
   tr:last-child td{border-bottom:none}
   tr:hover td{background:rgba(255,255,255,.02)}
   .num-badge{background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-weight:600;font-size:13px;padding:4px 10px;border-radius:6px;font-family:monospace;display:inline-block}
+  .price-badge{color:var(--success);font-weight:600;font-size:13px;font-family:monospace}
+  .stock-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;font-family:monospace}
+  .stock-ok{background:rgba(76,175,125,.12);border:1px solid var(--success);color:var(--success)}
+  .stock-low{background:rgba(232,193,74,.12);border:1px solid var(--accent);color:var(--accent)}
+  .stock-out{background:rgba(224,82,82,.12);border:1px solid var(--danger);color:var(--danger)}
   .card-img{width:52px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--surface2);cursor:zoom-in;transition:transform .15s,box-shadow .15s}
   .card-img:hover{transform:scale(1.08);box-shadow:0 4px 18px rgba(232,193,74,.25)}
   .img-placeholder{width:52px;height:72px;border-radius:6px;border:1px dashed var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;text-align:center}
@@ -61,6 +65,7 @@
   .form-row{display:flex;gap:10px}
   .form-row .form-group{flex:1}
   .modal-actions{display:flex;gap:10px;margin-top:1.5rem;justify-content:flex-end}
+  .auto-num-display{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;height:40px;display:flex;align-items:center;font-family:monospace;font-size:14px;color:var(--accent);font-weight:600;width:100%}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
   .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center}
   .stat-val{font-family:var(--display);font-size:2rem;color:var(--accent);letter-spacing:1px}
@@ -85,7 +90,7 @@
 </style>
 </head>
 <body>
-<h2 class="sr-only">Vanguard card database — browse, search, add, edit, and delete card entries with number, name, and picture.</h2>
+<h2 class="sr-only">Vanguard card database — browse, search, add, edit, and delete card entries with number, name, price, stock, and picture.</h2>
 
 <header>
   <div class="logo">VANGUARD <span>DATABASE</span></div>
@@ -96,6 +101,7 @@
   <div class="stats">
     <div class="stat"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Total Cards</div></div>
     <div class="stat"><div class="stat-val" id="stat-results">0</div><div class="stat-label">Results Shown</div></div>
+    <div class="stat"><div class="stat-val" id="stat-stock">0</div><div class="stat-label">Total Stock</div></div>
     <div class="stat"><div class="stat-val" id="stat-last">—</div><div class="stat-label">Last Added</div></div>
   </div>
 
@@ -109,6 +115,10 @@
       <option value="num-desc">No. ↓</option>
       <option value="name-asc">Name A–Z</option>
       <option value="name-desc">Name Z–A</option>
+      <option value="price-asc">Price ↑</option>
+      <option value="price-desc">Price ↓</option>
+      <option value="stock-asc">Stock ↑</option>
+      <option value="stock-desc">Stock ↓</option>
     </select>
     <button class="btn btn-primary" onclick="openModal()">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -123,6 +133,8 @@
           <th style="width:64px">No.</th>
           <th>Name</th>
           <th style="width:80px">Picture</th>
+          <th style="width:110px">Price</th>
+          <th style="width:110px">Available</th>
           <th style="width:140px">Actions</th>
         </tr>
       </thead>
@@ -135,16 +147,29 @@
 <div class="overlay" id="modal-overlay" style="display:none" onclick="closeIfOverlay(event)">
   <div class="modal" id="modal">
     <h3 id="modal-title">ADD CARD</h3>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Card Number</label>
-        <input type="number" id="f-num" placeholder="e.g. 001" min="1" />
-      </div>
+
+    <!-- Auto card number display -->
+    <div class="form-group">
+      <label>Card Number <span style="color:var(--success);font-size:10px;text-transform:none;letter-spacing:0">(auto-assigned)</span></label>
+      <div class="auto-num-display" id="auto-num-display">—</div>
     </div>
+
     <div class="form-group">
       <label>Card Name</label>
       <input type="text" id="f-name" placeholder="e.g. Blaster Blade" />
     </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Price (₱)</label>
+        <input type="number" id="f-price" placeholder="e.g. 150" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Stock Available</label>
+        <input type="number" id="f-stock" placeholder="e.g. 10" min="0" step="1" />
+      </div>
+    </div>
+
     <div class="form-group">
       <label>Picture URL</label>
       <input type="url" id="f-img" placeholder="https://example.com/image.jpg" />
@@ -189,15 +214,29 @@ let editId = null;
 function save(){localStorage.setItem('vanguard_db',JSON.stringify(db))}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 
+/* Auto-assign next card number */
+function nextCardNum(){
+  if(!db.length) return 1;
+  return Math.max(...db.map(r=>r.num)) + 1;
+}
+
 function toast(msg,type='success'){
   const t=document.getElementById('toast');
   t.textContent=msg;t.className='toast '+type;t.style.display='block';
   setTimeout(()=>{t.style.display='none'},2400);
 }
 
+function stockClass(qty){
+  if(qty===0)return 'stock-out';
+  if(qty<=5)return 'stock-low';
+  return 'stock-ok';
+}
+
 function updateStats(filtered){
   document.getElementById('stat-total').textContent=db.length;
   document.getElementById('stat-results').textContent=filtered.length;
+  const totalStock=db.reduce((s,r)=>s+(r.stock||0),0);
+  document.getElementById('stat-stock').textContent=totalStock;
   const last=db.length?db[db.length-1].name:'—';
   document.getElementById('stat-last').textContent=last.length>10?last.slice(0,9)+'…':last;
   document.getElementById('record-count').textContent=db.length+' record'+(db.length!==1?'s':'');
@@ -226,13 +265,22 @@ function renderTable(){
     if(sort==='num-desc')return b.num-a.num;
     if(sort==='name-asc')return a.name.localeCompare(b.name);
     if(sort==='name-desc')return b.name.localeCompare(a.name);
+    if(sort==='price-asc')return (a.price||0)-(b.price||0);
+    if(sort==='price-desc')return (b.price||0)-(a.price||0);
+    if(sort==='stock-asc')return (a.stock||0)-(b.stock||0);
+    if(sort==='stock-desc')return (b.stock||0)-(a.stock||0);
     return 0;
   });
   const tbody=document.getElementById('table-body');
   if(!rows.length){
-    tbody.innerHTML=`<tr><td colspan="4"><div class="empty-state"><div class="icon">⚔</div><div>No cards found</div><div style="font-size:12px;margin-top:8px">Try a different search or add a new card</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="icon">⚔</div><div>No cards found</div><div style="font-size:12px;margin-top:8px">Try a different search or add a new card</div></div></td></tr>`;
   } else {
-    tbody.innerHTML=rows.map(r=>`
+    tbody.innerHTML=rows.map(r=>{
+      const priceStr = (r.price!=null&&r.price!=='') ? '₱'+parseFloat(r.price).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+      const stockQty = r.stock!=null ? parseInt(r.stock) : 0;
+      const sc = stockClass(stockQty);
+      const stockLabel = stockQty===0 ? 'Out of Stock' : stockQty+' pcs';
+      return `
       <tr>
         <td><span class="num-badge">#${String(r.num).padStart(3,'0')}</span></td>
         <td style="font-weight:500">${escHtml(r.name)}</td>
@@ -243,11 +291,14 @@ function renderTable(){
             <div class="img-placeholder" style="display:none">No Image</div>`
           :`<div class="img-placeholder">No Image</div>`}
         </td>
+        <td><span class="price-badge">${priceStr}</span></td>
+        <td><span class="stock-badge ${sc}">${stockLabel}</span></td>
         <td><div class="actions">
           <button class="btn btn-edit" onclick="openModal('${r.id}')">Edit</button>
           <button class="btn btn-del" onclick="confirmDelete('${r.id}','${escHtml(r.name)}')">Delete</button>
         </div></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
   updateStats(rows);
 }
@@ -258,12 +309,19 @@ function openModal(id){
   editId=id||null;
   const card=id?db.find(r=>r.id===id):null;
   document.getElementById('modal-title').textContent=id?'EDIT CARD':'ADD CARD';
-  document.getElementById('f-num').value=card?card.num:'';
+
+  // Auto card number: show existing num when editing, next num when adding
+  const assignedNum = card ? card.num : nextCardNum();
+  document.getElementById('auto-num-display').textContent = '#' + String(assignedNum).padStart(3,'0');
+  document.getElementById('auto-num-display').dataset.num = assignedNum;
+
   document.getElementById('f-name').value=card?card.name:'';
+  document.getElementById('f-price').value=card&&card.price!=null?card.price:'';
+  document.getElementById('f-stock').value=card&&card.stock!=null?card.stock:'';
   document.getElementById('f-img').value=card?card.img:'';
   updateImgPreview(card?card.img:'');
   document.getElementById('modal-overlay').style.display='flex';
-  setTimeout(()=>document.getElementById('f-num').focus(),50);
+  setTimeout(()=>document.getElementById('f-name').focus(),50);
 }
 
 function closeModal(){document.getElementById('modal-overlay').style.display='none';editId=null}
@@ -280,18 +338,21 @@ function updateImgPreview(url){
 }
 
 function saveCard(){
-  const num=parseInt(document.getElementById('f-num').value,10);
+  const num=parseInt(document.getElementById('auto-num-display').dataset.num,10);
   const name=document.getElementById('f-name').value.trim();
+  const priceVal=document.getElementById('f-price').value.trim();
+  const stockVal=document.getElementById('f-stock').value.trim();
   const img=document.getElementById('f-img').value.trim();
-  if(!num||num<1){toast('Enter a valid card number','danger');return}
+  const price=priceVal!==''?parseFloat(priceVal):null;
+  const stock=stockVal!==''?parseInt(stockVal,10):0;
   if(!name){toast('Enter a card name','danger');return}
+  if(priceVal!==''&&isNaN(price)){toast('Enter a valid price','danger');return}
   if(editId){
     const idx=db.findIndex(r=>r.id===editId);
-    if(idx>-1){db[idx]={...db[idx],num,name,img}}
+    if(idx>-1){db[idx]={...db[idx],num,name,price,stock,img}}
     toast('Card updated!');
   } else {
-    if(db.find(r=>r.num===num)){toast('Card number already exists','danger');return}
-    db.push({id:genId(),num,name,img});
+    db.push({id:genId(),num,name,price,stock,img});
     toast('Card added!');
   }
   save();closeModal();renderTable();
